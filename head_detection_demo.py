@@ -16,7 +16,7 @@ import src.utils as utils
 from src.config import opt
 import time
 
-SAVE_FLAG = 0
+SAVE_FLAG = 1
 THRESH = 0.01
 IM_RESIZE = False
 
@@ -29,8 +29,8 @@ def read_img(path):
     img_raw = np.asarray(f, dtype=np.uint8)
     img_raw_final = img_raw.copy()
     img = np.asarray(f, dtype=np.float32)
-    _, H, W = img.shape
     img = img.transpose((2,0,1))
+    _, H, W = img.shape
     img = preprocess(img)
     _, o_H, o_W = img.shape
     scale = o_H / H
@@ -52,11 +52,11 @@ def detect(img_path, model_path):
     print ("[INFO] Head detection over. Time taken: {:.4f} s".format(tt))
     for i in range(pred_bboxes_.shape[0]):
         ymin, xmin, ymax, xmax = pred_bboxes_[i,:]
-        utils.draw_bounding_box_on_image_array(img_raw,ymin, xmin, ymax, xmax)
+        utils.draw_bounding_box_on_image_array(img_raw,ymin/scale, xmin/scale, ymax/scale, xmax/scale)
     plt.axis('off')
     plt.imshow(img_raw)
     if SAVE_FLAG == 1:
-        plt.savefig(os.path.join(opt.test_output_path, file_id+'.png'), bbox_inches='tight', pad_inches=0)
+        plt.savefig(file_id+'.png', bbox_inches='tight', pad_inches=0)
     else:
         plt.show()    
 
