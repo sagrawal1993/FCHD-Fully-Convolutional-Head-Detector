@@ -6,8 +6,8 @@ class Config:
     min_size = 600  # image resize
     max_size = 1000 # image resize 
     caffe_pretrain = True
-    caffe_pretrain_path = 'data/pretrained_model/vgg16_caffe.pth'
-    model_save_path = 'checkpoints'
+    caffe_pretrain_path = '/home/ubuntu/suraj/package/FCHD/data/pretrained_model/vgg16_caffe.pth'
+    model_save_path = '/home/ubuntu/suraj/package/FCHD/checkpoints'
     # sigma for l1_smooth_loss
     rpn_sigma = 3.
 

@@ -22,7 +22,7 @@ THRESH = 0.01
 IM_RESIZE = False
 
 class HeadDetection:
-    def __init__(self, model_path="/home/ubuntu/suraj/package/FCHD-Fully-Convolutional-Head-Detector/checkpoints/head_detector_final"):
+    def __init__(self, model_path="/home/ubuntu/suraj/package/FCHD/checkpoints/head_detector_final"):
         self.head_detector = Head_Detector_VGG16(ratios=[1], anchor_scales=[2,4])
         trainer = Head_Detector_Trainer(self.head_detector).cuda()
         trainer.load(model_path)
@@ -50,15 +50,20 @@ class HeadDetection:
         tt = et - st
         print ("[INFO] Head detection over. Time taken: {:.4f} s".format(tt))
         box_list = []
+        type_list = []
+        prob_list = []
         for i in range(pred_bboxes_.shape[0]):
             (y1, x1, y2, x2) = pred_bboxes_[i,:]/scale
             box_list.append((x1, y1, x2-x1, y2-y1))
-        return box_list
+            type_list.append("person")
+            prob_list.append(0.5)
+        return box_list, type_list, prob_list
 
-def processsVideo(video_path, output_file_name):
+def processsVideo(video_path, output_file_name, req_fps):
     detector = HeadDetection()
     is_a_vertical_vid = False
     vid_t = cv2.VideoCapture(video_path)
+    #vid_t.set(cv2.CAP_PROP_FPS, fps)
     fps = vid_t.get(cv2.CAP_PROP_FPS)
     frame_width = int(vid_t.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(vid_t.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -67,6 +72,7 @@ def processsVideo(video_path, output_file_name):
     fourcc = cv2.VideoWriter_fourcc(*'xvid')
     out = cv2.VideoWriter(output_file_name, fourcc, fps, (frame_width, frame_height))
     total_frames = 0
+    p_count = int(fps/req_fps)
     while vid_t.isOpened():
         ret, frame = vid_t.read()
         if ret is False:
@@ -77,11 +83,17 @@ def processsVideo(video_path, output_file_name):
         else:
             # vid.append(encode_np_image(frame))
             curr_frame = frame.copy()
+
+        if total_frames % p_count != 0:
+            total_frames += 1
+            continue
         img = cv2.cvtColor(curr_frame, cv2.COLOR_BGR2RGB)
-        box_list = detector.find_head(img)
+        box_list, type_list, prob_list = detector.find_head(img)
         for box in box_list:
-            cv2.rectangle(img, (box[0], box[1]), (box[2] + box[0], box[3] + box[1]), (0, 0, 255), 1)
-        out.write(img)
+            cv2.rectangle(curr_frame, (box[0], box[1]), (box[2] + box[0], box[3] + box[1]), (0, 0, 255), 1)
+        cv2.putText(curr_frame,"Length: " + str(len(box_list)), (0, 50), cv2.FONT_HERSHEY_PLAIN , 1, (255, 0, 0), 1, cv2.LINE_AA)
+        out.write(curr_frame)
+        print(total_frames)
         total_frames += 1
     out.release()
 
@@ -89,10 +101,10 @@ def processImage(img_path):
     detector = HeadDetection()
     img = cv2.imread(img_path)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    box_list = detector.find_head(img)
+    box_list, type_list, prob_list = detector.find_head(img)
     for box in box_list:
         cv2.rectangle(img, (box[0], box[1]), (box[2] + box[0], box[3] + box[1]), (255, 0, 0), 1)
     cv2.imwrite("output.jpg", img)
 
-processsVideo("/home/ubuntu/suraj/data/countingData/ShopEntrance.mp4","video.mp4")
+processsVideo("/home/ubuntu/suraj/data/countingData/ShopEntrance.mp4","video.mp4", 1)
 #processImage("img.jpg")
